@@ -34,6 +34,18 @@ func isDirectory(path string) (bool, error) {
 	return fileInfo.IsDir(), nil
 }
 
+func isExisting(path string) (bool, error) {
+	_, error := os.Stat(path)
+	if os.IsNotExist(error) {
+		return false, nil
+	}
+	if error != nil {
+		return false, error
+	}
+
+	return true, nil
+}
+
 func renameFileWithDate(path string) error {
 	dir, file := filepath.Split(path)
 
@@ -51,11 +63,21 @@ func renameFileWithDate(path string) error {
 		return error
 	}
 	if isDir {
-		fmt.Printf("D: %s\n", path)
+		fmt.Printf("dir: %s\n", path)
 		return nil
 	}
 
 	newPath := filepath.Join(dir, dateAsString()+" "+file)
+
+	alreadyExists, error := isExisting(newPath)
+	if error != nil {
+		return error
+	}
+
+	if alreadyExists {
+		return fmt.Errorf("%s exists already", newPath)
+	}
+
 	if error := os.Rename(path, newPath); error != nil {
 		return error
 	}
