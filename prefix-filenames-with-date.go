@@ -37,8 +37,16 @@ func isExisting(path string) (bool, error) {
 	return true, nil
 }
 
+func isIgnoredFile(file string) bool {
+	return file == ".DS_Store"
+}
+
 func renameFileWithDate(path string, fileInfo os.FileInfo) error {
 	dir, file := filepath.Split(path)
+
+	if isIgnoredFile(file) {
+		return nil
+	}
 
 	isPrefixedWithDate, error := isFilenamePrefixedWithDate(file)
 	if error != nil {
@@ -110,10 +118,10 @@ func main() {
 	}
 
 	directory := os.Args[1]
+	fmt.Printf("Prefixing files in %s with current date %s\n\n", directory, dateAsString())
+
 	anyError := prefixFilenamesInDirWithDate(directory)
 	if anyError {
 		os.Exit(1)
 	}
-
-	// Exit code 0
 }
