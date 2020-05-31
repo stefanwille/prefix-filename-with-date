@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"time"
 )
@@ -14,12 +15,9 @@ import (
 const filenamePattern = `\d\d\d\d-\d\d-\d\d `
 const dateFormat = "2006-01-02"
 
-func isFilenamePrefixedWithDate(filename string) bool {
+func isFilenamePrefixedWithDate(filename string) (bool, error) {
 	matched, error := regexp.MatchString(filenamePattern, filename)
-	if error != nil {
-		fmt.Println(filename, error)
-	}
-	return matched
+	return matched, error
 }
 
 func dateAsString() string {
@@ -27,32 +25,60 @@ func dateAsString() string {
 	return currentTime.Format(dateFormat)
 }
 
-func renameFileWithDate(filename string) {
-	if isFilenamePrefixedWithDate(filename) {
-		fmt.Printf("👍: %s\n", filename)
-		return
+func isDirectory(path string) (bool, error) {
+	fileInfo, error := os.Stat(path)
+	if error != nil {
+		return false, error
 	}
 
-	newFilename := dateAsString() + " " + filename
-	if error := os.Rename(filename, newFilename); error != nil {
-		fmt.Printf("❌: %s\n", error)
-		return
+	return fileInfo.IsDir(), nil
+}
+
+func renameFileWithDate(path string) error {
+	dir, file := filepath.Split(path)
+
+	isPrefixedWithDate, error := isFilenamePrefixedWithDate(file)
+	if error != nil {
+		return error
+	}
+	if isPrefixedWithDate {
+		fmt.Printf("👍: %s\n", path)
+		return nil
 	}
 
-	fmt.Printf("✅: %s\n", filename)
+	isDir, error := isDirectory(path)
+	if error != nil {
+		return error
+	}
+	if isDir {
+		fmt.Printf("D: %s\n", path)
+		return nil
+	}
+
+	newPath := filepath.Join(dir, dateAsString()+" "+file)
+	if error := os.Rename(path, newPath); error != nil {
+		return error
+	}
+
+	fmt.Printf("✅: %s => %s\n", path, newPath)
+	return nil
 }
 
 func renameFilesWithDate(filenames []string) {
 	for _, filename := range filenames {
-		renameFileWithDate(filename)
+		error := renameFileWithDate(filename)
+		if error != nil {
+			fmt.Printf("❌: %s\n", error)
+		}
 	}
 }
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Call me with 1 filename!")
-		os.Exit(1)
+		fmt.Printf("\nUsage:\nprefix-filename-with-date [FILENAME] ...\n\n")
+		os.Exit(0)
 	}
+
 	filenames := os.Args[1:]
 	renameFilesWithDate(filenames)
 }
