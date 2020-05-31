@@ -1,6 +1,6 @@
 /**
-Takes filenames from ARGV, check if they begin with "yyyy-mm-dd ". If not, rename the files to
-begin with the the current date.
+Take filenames from ARGV, check if they begin with "yyyy-mm-dd ".
+If not, rename the files to begin with the the current date.
 */
 package main
 
@@ -11,17 +11,20 @@ import (
 	"time"
 )
 
+const filenamePattern = `\d\d\d\d-\d\d-\d\d `
+const dateFormat = "2006-01-02"
+
 func isFilenamePrefixedWithDate(filename string) bool {
-	matched, error := regexp.MatchString(`\d\d\d\d-\d\d-\d\d `, filename)
+	matched, error := regexp.MatchString(filenamePattern, filename)
 	if error != nil {
 		fmt.Println(filename, error)
 	}
 	return matched
 }
 
-func currentDateAsString() string {
+func dateAsString() string {
 	currentTime := time.Now()
-	return currentTime.Format("2006-01-02")
+	return currentTime.Format(dateFormat)
 }
 
 func renameFileWithDate(filename string) {
@@ -29,14 +32,14 @@ func renameFileWithDate(filename string) {
 		fmt.Printf("👍: %s\n", filename)
 		return
 	}
-	prefix := currentDateAsString()
-	newFilename := prefix + " " + filename
 
+	newFilename := dateAsString() + " " + filename
 	if error := os.Rename(filename, newFilename); error != nil {
 		fmt.Printf("❌: %s\n", error)
-	} else {
-		fmt.Printf("✅: %s\n", filename)
+		return
 	}
+
+	fmt.Printf("✅: %s\n", filename)
 }
 
 func renameFilesWithDate(filenames []string) {
