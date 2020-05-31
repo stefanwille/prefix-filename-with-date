@@ -7,6 +7,8 @@ If not, renames the files to begin with the current date. For example:
 test/some-invoice.pdf => test/2020-05-31 some-invoice.pdf
 ```
 
+I run this program from Alfred to tag all my tax related files with receive dates.
+
 ## Build
 
 ```bash
