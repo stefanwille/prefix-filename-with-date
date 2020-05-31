@@ -16,3 +16,7 @@
 
 .vscode
 test
+
+project.code-workspace
+
+prefix-filename-with-date

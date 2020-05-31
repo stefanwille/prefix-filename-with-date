@@ -25,15 +25,6 @@ func dateAsString() string {
 	return currentTime.Format(dateFormat)
 }
 
-func isDirectory(path string) (bool, error) {
-	fileInfo, error := os.Stat(path)
-	if error != nil {
-		return false, error
-	}
-
-	return fileInfo.IsDir(), nil
-}
-
 func isExisting(path string) (bool, error) {
 	_, error := os.Stat(path)
 	if os.IsNotExist(error) {
@@ -46,7 +37,7 @@ func isExisting(path string) (bool, error) {
 	return true, nil
 }
 
-func renameFileWithDate(path string) error {
+func renameFileWithDate(path string, fileInfo os.FileInfo) error {
 	dir, file := filepath.Split(path)
 
 	isPrefixedWithDate, error := isFilenamePrefixedWithDate(file)
@@ -58,11 +49,7 @@ func renameFileWithDate(path string) error {
 		return nil
 	}
 
-	isDir, error := isDirectory(path)
-	if error != nil {
-		return error
-	}
-	if isDir {
+	if fileInfo.IsDir() {
 		fmt.Printf("dir: %s\n", path)
 		return nil
 	}
@@ -86,26 +73,45 @@ func renameFileWithDate(path string) error {
 	return nil
 }
 
-func renameFilesWithDate(filenames []string) bool {
-	anyError := false
-	for _, filename := range filenames {
-		error := renameFileWithDate(filename)
-		if error != nil {
-			fmt.Printf("❌: %s\n", error)
-			anyError = true
-		}
+func walkPath(path string, fileInfo os.FileInfo, err error, anyError *bool) error {
+	if err != nil {
+		fmt.Printf("❌: %s\n", err)
+		return nil
 	}
+
+	error := renameFileWithDate(path, fileInfo)
+	if error != nil {
+		fmt.Printf("❌: %s\n", error)
+		*anyError = true
+	}
+
+	return error
+}
+
+func renameFilesWithDate(directory string) bool {
+	anyError := false
+	walkFn := func(path string, fileInfo os.FileInfo, err error) error {
+		walkPath(path, fileInfo, err, &anyError)
+		return nil
+	}
+
+	error := filepath.Walk(directory, walkFn)
+	if error != nil {
+		fmt.Printf("❌❌ %s\n", error)
+		return true
+	}
+
 	return anyError
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Printf("\nUsage:\nprefix-filename-with-date [FILENAME] ...\n\n")
-		os.Exit(0)
+	if len(os.Args) != 2 {
+		fmt.Println("Usage: prefix-filename-with-date <directory>")
+		os.Exit(1)
 	}
 
-	filenames := os.Args[1:]
-	anyError := renameFilesWithDate(filenames)
+	directory := os.Args[1]
+	anyError := renameFilesWithDate(directory)
 	if anyError {
 		os.Exit(1)
 	}
