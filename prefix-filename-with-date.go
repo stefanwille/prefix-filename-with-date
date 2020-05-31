@@ -86,13 +86,16 @@ func renameFileWithDate(path string) error {
 	return nil
 }
 
-func renameFilesWithDate(filenames []string) {
+func renameFilesWithDate(filenames []string) bool {
+	anyError := false
 	for _, filename := range filenames {
 		error := renameFileWithDate(filename)
 		if error != nil {
 			fmt.Printf("❌: %s\n", error)
+			anyError = true
 		}
 	}
+	return anyError
 }
 
 func main() {
@@ -102,5 +105,10 @@ func main() {
 	}
 
 	filenames := os.Args[1:]
-	renameFilesWithDate(filenames)
+	anyError := renameFilesWithDate(filenames)
+	if anyError {
+		os.Exit(1)
+	}
+
+	// Exit code 0
 }
