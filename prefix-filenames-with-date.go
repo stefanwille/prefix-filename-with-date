@@ -1,6 +1,6 @@
 /**
-Take filenames from ARGV, check if they begin with "yyyy-mm-dd ".
-If not, rename the files to begin with the the current date.
+Walks through a directory and checks all files if they begin with "yyyy-mm-dd ".
+If not, rename the files to begin with the current date.
 */
 package main
 
@@ -73,25 +73,24 @@ func renameFileWithDate(path string, fileInfo os.FileInfo) error {
 	return nil
 }
 
-func walkPath(path string, fileInfo os.FileInfo, err error, anyError *bool) error {
+func prefixFilenameWithDate(path string, fileInfo os.FileInfo, err error) error {
 	if err != nil {
-		fmt.Printf("❌: %s\n", err)
-		return nil
+		return err
 	}
 
 	error := renameFileWithDate(path, fileInfo)
-	if error != nil {
-		fmt.Printf("❌: %s\n", error)
-		*anyError = true
-	}
-
 	return error
 }
 
-func renameFilesWithDate(directory string) bool {
+func prefixFilenamesInDirWithDate(directory string) bool {
 	anyError := false
 	walkFn := func(path string, fileInfo os.FileInfo, err error) error {
-		walkPath(path, fileInfo, err, &anyError)
+		errorForThisFile := prefixFilenameWithDate(path, fileInfo, err)
+		if errorForThisFile != nil {
+			fmt.Printf("❌ %s: %s\n", path, errorForThisFile)
+			anyError = true
+		}
+		// Keep the Walk() function going even if an error for a file.
 		return nil
 	}
 
@@ -111,7 +110,7 @@ func main() {
 	}
 
 	directory := os.Args[1]
-	anyError := renameFilesWithDate(directory)
+	anyError := prefixFilenamesInDirWithDate(directory)
 	if anyError {
 		os.Exit(1)
 	}
